@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { scanResultSchema, getScanSessionResponseSchema, createScanSessionResponseSchema } from './index.js'
 
+const officialBoxes = [
+  'background', 'foreground', 'card', 'card-foreground', 'popover', 'popover-foreground',
+  'primary', 'primary-foreground', 'secondary', 'secondary-foreground', 'muted', 'muted-foreground',
+  'accent', 'accent-foreground', 'destructive', 'border', 'input', 'ring',
+  'chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5',
+  'sidebar', 'sidebar-foreground', 'sidebar-primary', 'sidebar-primary-foreground',
+  'sidebar-accent', 'sidebar-accent-foreground', 'sidebar-border', 'sidebar-ring', 'radius',
+]
+
 const minimal = {
   schemaVersion: 2,
   cliVersion: '0.1.0',
@@ -28,6 +37,23 @@ describe('scan contract', () => {
     expect(scanResultSchema.safeParse({ ...minimal, theme: { status: 'located', source: 'official_query', path: 'src/theme.css' } }).success).toBe(true)
     expect(scanResultSchema.safeParse({ ...minimal, theme: { status: 'located', source: 'official_query', path: null } }).success).toBe(false)
     expect(scanResultSchema.safeParse({ ...minimal, tailwind: { status: 'installed', version: null } }).success).toBe(false)
+  })
+  it('accepts a used shadcn appearance with the shared box names and rejects an installed-component inventory', () => {
+    const used = { ...minimal, shadcn: { status: 'used', appearance: 'base-nova', boxes: officialBoxes } }
+    expect(scanResultSchema.parse(used).shadcn).toEqual({ status: 'used', appearance: 'base-nova', boxes: officialBoxes })
+    expect(scanResultSchema.parse({ ...minimal, shadcn: { status: 'used', appearance: 'custom-look', boxes: null } }).shadcn).toEqual({
+      status: 'used', appearance: 'custom-look', boxes: null,
+    })
+    expect(scanResultSchema.safeParse({ ...minimal, shadcn: { status: 'not_used' } }).success).toBe(true)
+    expect(scanResultSchema.safeParse({ ...minimal, shadcn: { status: 'query_failed' } }).success).toBe(true)
+    for (const shadcn of [
+      { status: 'used', appearance: 'base-nova', boxes: officialBoxes.slice(0, -1) },
+      { status: 'used', appearance: 'base-nova', boxes: [...officialBoxes, 'warning'] },
+      { status: 'configured', cssEntry: 'src/index.css', components: ['button'], preset: 'base-nova' },
+      { status: 'used', appearance: 'base-nova', boxes: officialBoxes, components: ['button'] },
+    ]) {
+      expect(scanResultSchema.safeParse({ ...minimal, shadcn }).success).toBe(false)
+    }
   })
   it('accepts waiting tasks, rejects unimplemented running state', () => {
     const task = { sessionId: 'scan_123', status: 'waiting_cli', result: null, error: null }

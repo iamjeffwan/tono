@@ -7,9 +7,9 @@ const require = createRequire(import.meta.url)
 const manifest = JSON.parse(await readFile('package.json', 'utf8'))
 
 await build({
-  entryPoints: ['src/main.ts', 'src/theme-query-worker.ts'],
+  entryPoints: ['src/main.ts', 'src/theme-query-worker.ts', 'src/shadcn-config-worker.ts'],
   outdir: 'dist',
-  external: ['@shadcn/lint'],
+  external: ['@shadcn/lint', 'cosmiconfig', 'shadcn'],
   bundle: true,
   platform: 'node',
   target: 'node22',

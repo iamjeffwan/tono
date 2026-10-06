@@ -48,6 +48,7 @@ export async function runScan(options: RunnerOptions, dependencies: RunnerDepend
   } catch { throw new CliError('DETECTION_FAILED', '检测未完成或结果不符合协议，未上传。') }
   if (result.tailwind.status === 'installed') log(`已安装样式框架版本：${result.tailwind.version}`)
   if (result.theme.status === 'located') log(`官方查询选中的主题：${result.theme.path}；此路径未经过全项目引用审计。`)
+  if (result.shadcn.status === 'used') log(`shadcn 外观：${result.shadcn.appearance}。`)
   for (const warning of result.warnings) log(warning.message)
   const record = { cacheVersion: 1 as const, sessionId: options.sessionId, server, result }
   let file: string

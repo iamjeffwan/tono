@@ -13,6 +13,7 @@
   "files": [
     "dist/main.js",
     "dist/theme-query-worker.js",
+    "dist/shadcn-config-worker.js",
     "dist/THIRD_PARTY_LICENSES.txt"
   ],
   "scripts": {
@@ -27,6 +28,8 @@
     "yaml": "^2.9.1"
   },
   "dependencies": {
-    "@shadcn/lint": "0.2.0"
+    "@shadcn/lint": "0.2.0",
+    "cosmiconfig": "9.0.0",
+    "shadcn": "4.21.0"
   }
 }

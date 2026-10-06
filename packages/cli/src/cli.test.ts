@@ -31,9 +31,10 @@ async function writeProject(directory: string, files: Record<string, string>) {
   }
 }
 
-async function scanDirectory(ctx: Awaited<ReturnType<typeof context>>, cwd = ctx.directory) {
+async function scanDirectory(ctx: Awaited<ReturnType<typeof context>>, cwd = ctx.directory, env?: NodeJS.ProcessEnv) {
   const out = await exec(process.execPath, [binary, 'scan', '--session', ctx.options.sessionId,
-    '--token', ctx.options.token, '--server', ctx.options.server, '--cwd', cwd, '--cache-dir', ctx.options.cacheDirectory])
+    '--token', ctx.options.token, '--server', ctx.options.server, '--cwd', cwd, '--cache-dir', ctx.options.cacheDirectory],
+  env ? { env } : {})
   return { out, task: ctx.service.getSession(ctx.options.sessionId) }
 }
 
@@ -236,10 +237,11 @@ describe('installed project scan', () => {
     expect(task.result?.schemaVersion).toBe(2)
     expect(task.result?.tailwind).toEqual({ status: 'installed', version: '4.3.3' })
     expect(task.result?.theme).toEqual({ status: 'located', path: 'styles/brand.css', source: 'official_query' })
-    expect(task.result?.shadcn).toEqual({ status: 'not_checked' })
+    expect(task.result?.shadcn).toEqual({ status: 'query_failed' })
+    expect(task.result?.warnings.map((warning) => warning.code)).toContain('SHADCN_QUERY_FAILED')
     expect(task.result?.componentLibraries).toEqual([])
     expect(task.result?.support).toEqual({
-      status: 'needs_action', blockingIssues: [], warnings: ['组件查询与最终接入判定将在后续工单完成。'],
+      status: 'needs_action', blockingIssues: [], warnings: ['最终接入判定将在后续工单完成。'],
     })
     expect(await readFile(path.join(ctx.directory, 'eslint.config.mjs'), 'utf8')).toContain('must never execute')
     const [file] = await readdir(ctx.options.cacheDirectory)
@@ -273,7 +275,7 @@ describe('installed project scan', () => {
     expect(olderResult.task.result?.warnings.map((warning) => warning.code)).toContain('TAILWIND_VERSION_UNSUPPORTED')
     expect(olderResult.task.result?.theme).toMatchObject({ status: 'located', path: 'src/index.css' })
     expect(olderResult.task.result?.support.status).toBe('needs_action')
-    expect(olderResult.task.result?.shadcn.status).toBe('not_checked')
+    expect(olderResult.task.result?.shadcn.status).toBe('not_used')
   })
 
   it('uploads an unconfirmed version, a missing theme, and a rejected outside path', async () => {
@@ -311,6 +313,96 @@ describe('installed project scan', () => {
     expect(JSON.stringify(outsideResult.task)).not.toContain(outside.directory)
   })
 
+  const officialBoxes = [
+    'background', 'foreground', 'card', 'card-foreground', 'popover', 'popover-foreground',
+    'primary', 'primary-foreground', 'secondary', 'secondary-foreground', 'muted', 'muted-foreground',
+    'accent', 'accent-foreground', 'destructive', 'border', 'input', 'ring',
+    'chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5',
+    'sidebar', 'sidebar-foreground', 'sidebar-primary', 'sidebar-primary-foreground',
+    'sidebar-accent', 'sidebar-accent-foreground', 'sidebar-border', 'sidebar-ring', 'radius',
+  ]
+  function componentsConfig(style: string, baseColor: string) {
+    return JSON.stringify({
+      style,
+      tailwind: { css: 'src/index.css', baseColor },
+      aliases: { components: '@/components', utils: '@/lib/utils' },
+    })
+  }
+  async function scanStyle(style: string, baseColor: string, components = componentsConfig(style, baseColor)) {
+    const ctx = await context()
+    await writeProject(ctx.directory, {
+      'package.json': '{"name":"shadcn-scan"}',
+      'node_modules/tailwindcss/package.json': tailwind('4.3.3'),
+      'src/index.css': theme,
+      'components.json': components,
+    })
+    return scanDirectory(ctx)
+  }
+
+  it('lists the same official boxes for two appearances and ignores base color', async () => {
+    const nova = await scanStyle('base-nova', 'neutral')
+    const vega = await scanStyle('base-vega', 'blue')
+    for (const task of [nova.task, vega.task]) {
+      expect(task.status).toBe('completed')
+      expect(task.result?.tailwind).toEqual({ status: 'installed', version: '4.3.3' })
+      expect(task.result?.theme).toEqual({ status: 'located', path: 'src/index.css', source: 'official_query' })
+      expect(task.result?.support).toEqual({
+        status: 'needs_action', blockingIssues: [], warnings: ['最终接入判定将在后续工单完成。'],
+      })
+      expect(task.result?.componentLibraries).toEqual([])
+    }
+    expect(nova.task.result?.shadcn).toEqual({ status: 'used', appearance: 'base-nova', boxes: officialBoxes })
+    expect(vega.task.result?.shadcn).toEqual({ status: 'used', appearance: 'base-vega', boxes: officialBoxes })
+    expect(JSON.stringify(nova.task.result?.shadcn)).not.toContain('neutral')
+    expect(JSON.stringify(vega.task.result?.shadcn)).not.toContain('blue')
+    expect(JSON.stringify(vega.task.result?.shadcn)).not.toContain('baseColor')
+  })
+
+  it('distinguishes a missing config, an invalid config, an unofficial style, and a failed query', async () => {
+    const missing = await context()
+    await writeProject(missing.directory, {
+      'package.json': '{"name":"no-shadcn"}',
+      'node_modules/tailwindcss/package.json': tailwind('4.3.3'),
+      'src/index.css': theme,
+    })
+    const missingResult = await scanDirectory(missing)
+    expect(missingResult.task.result?.shadcn).toEqual({ status: 'not_used' })
+    expect(missingResult.task.result?.warnings.map((warning) => warning.code)).not.toContain('SHADCN_QUERY_FAILED')
+
+    const invalid = await scanStyle('base-nova', 'neutral', '{"style":"base-nova"}')
+    expect(invalid.task.result?.shadcn).toEqual({ status: 'query_failed' })
+    expect(invalid.task.result?.shadcn).not.toEqual({ status: 'not_used' })
+    expect(JSON.stringify(invalid.task.result?.shadcn)).not.toContain('button')
+
+    const unlisted = await scanStyle('brand-custom', 'neutral')
+    expect(unlisted.task.result?.shadcn).toEqual({ status: 'used', appearance: 'brand-custom', boxes: null })
+    expect(unlisted.task.result?.warnings.map((warning) => warning.code)).toContain('SHADCN_STYLE_UNLISTED')
+    expect(JSON.stringify(unlisted.task.result?.shadcn)).not.toContain('primary')
+
+    const failed = await scanStyle('base-nova', 'neutral', '{')
+    expect(failed.task.result?.shadcn).toEqual({ status: 'query_failed' })
+    expect(failed.task.result?.warnings.map((warning) => warning.code)).toContain('SHADCN_QUERY_FAILED')
+    expect(failed.task.result?.support.blockingIssues).toEqual([])
+    expect(JSON.stringify(failed.task.result)).not.toContain('components.json')
+  })
+
+  it('does not treat a global components config as a project that uses shadcn', async () => {
+    const ctx = await context()
+    await writeProject(ctx.directory, {
+      'package.json': '{"name":"no-shadcn"}',
+      'node_modules/tailwindcss/package.json': tailwind('4.3.3'),
+      'src/index.css': theme,
+    })
+    const appData = await mkdtemp(path.join(root, 'artifacts', 'appdata-'))
+    await writeProject(appData, {
+      'components/Config/config.json': componentsConfig('base-vega', 'neutral'),
+    })
+    const { task } = await scanDirectory(ctx, ctx.directory, { ...process.env, APPDATA: appData })
+    expect(task.status).toBe('completed')
+    expect(task.result?.shadcn).toEqual({ status: 'not_used' })
+    expect(JSON.stringify(task.result?.shadcn)).not.toContain('base-vega')
+  })
+
   it('stops a workspace before reading its installed version or theme', async () => {
     const ctx = await context()
     await writeProject(ctx.directory, {
@@ -343,8 +435,10 @@ describe('installed project scan', () => {
     expect(task.status).toBe('completed')
     expect(task.result?.tailwind).toEqual({ status: 'installed', version: installed.version })
     expect(task.result?.theme).toEqual({ status: 'located', path: components.tailwind.css, source: 'official_query' })
-    expect(task.result?.shadcn).toEqual({ status: 'not_checked' })
+    expect(task.result?.shadcn).toEqual({ status: 'used', appearance: 'base-nova', boxes: officialBoxes })
     expect(task.result?.support.blockingIssues).toEqual([])
+    expect(JSON.stringify(task.result?.shadcn)).not.toContain('neutral')
+    expect(JSON.stringify(task.result?.shadcn)).not.toContain('button')
     expect(task.result?.support.status).toBe('needs_action')
     expect(JSON.stringify(task.result)).not.toContain(project)
     expect(await readFile(path.join(project, 'package.json'), 'utf8')).toBe(manifest)

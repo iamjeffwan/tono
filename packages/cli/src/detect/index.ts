@@ -3,6 +3,7 @@ import { scanResultSchema, type ScanResult } from '@design-system-guardrails/sca
 import type { Detector } from '../runner.js'
 import { locateProject, ProjectIssue } from './project.js'
 import { findTailwind } from './tailwind.js'
+import { findShadcn } from './shadcn.js'
 import { findTheme } from './theme.js'
 
 export function createProjectDetector(version: string): Detector {
@@ -12,7 +13,7 @@ export function createProjectDetector(version: string): Detector {
       tailwind: { status: 'not_checked', version: null },
       theme: { status: 'not_checked', path: null, source: null },
       shadcn: { status: 'not_checked' }, componentLibraries: [],
-      support: { status: 'needs_action', blockingIssues: [], warnings: ['组件查询与最终接入判定将在后续工单完成。'] },
+      support: { status: 'needs_action', blockingIssues: [], warnings: ['最终接入判定将在后续工单完成。'] },
       warnings: [],
     }
     let root: string
@@ -39,6 +40,9 @@ export function createProjectDetector(version: string): Detector {
     result.theme = located.theme
     result.warnings.push(...located.warnings)
     if (result.theme.status !== 'located') result.support.blockingIssues.push('未能定位可供确认的项目主题文件。')
+    const shadcn = await findShadcn(root)
+    result.shadcn = shadcn.shadcn
+    result.warnings.push(...shadcn.warnings)
     return scanResultSchema.parse(result)
   }
 }

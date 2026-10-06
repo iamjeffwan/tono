@@ -18,12 +18,27 @@ export const themeResultSchema = z.discriminatedUnion('status', [
   z.strictObject({ status: z.literal('located'), path: relativePath, source: z.enum(['official_query', 'user_confirmed']) }),
   z.strictObject({ status: z.enum(['not_found', 'query_failed', 'not_checked']), path: z.null(), source: z.null() }),
 ])
+// 官方主题文档 Theme Tokens 表。各官方外观共用这一份名字，浅色和深色不分成两份。
+export const officialShadcnBoxNames = [
+  'background', 'foreground', 'card', 'card-foreground', 'popover', 'popover-foreground',
+  'primary', 'primary-foreground', 'secondary', 'secondary-foreground', 'muted', 'muted-foreground',
+  'accent', 'accent-foreground', 'destructive', 'border', 'input', 'ring',
+  'chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5',
+  'sidebar', 'sidebar-foreground', 'sidebar-primary', 'sidebar-primary-foreground',
+  'sidebar-accent', 'sidebar-accent-foreground', 'sidebar-border', 'sidebar-ring', 'radius',
+] as const
+const officialBoxListSchema = z.array(z.string()).refine(
+  (values) => values.length === officialShadcnBoxNames.length && values.every((name, index) => name === officialShadcnBoxNames[index]),
+  { message: 'Box names must be the shared official theme token list.' },
+)
 export const shadcnResultSchema = z.discriminatedUnion('status', [
   z.strictObject({
-    status: z.literal('configured'), cssEntry: relativePath.nullable(),
-    components: z.array(z.string().min(1)), preset: z.string().min(1).nullable(),
+    status: z.literal('used'),
+    appearance: z.string().min(1),
+    // null：配置通过官方校验，但外观不在官方名单内，因此不附上默认盒子。
+    boxes: z.union([z.null(), officialBoxListSchema]),
   }),
-  z.strictObject({ status: z.enum(['not_configured', 'query_failed', 'not_checked']) }),
+  z.strictObject({ status: z.enum(['not_used', 'query_failed', 'not_checked']) }),
 ])
 export const componentLibrarySchema = z.strictObject({
   name: z.string().min(1),

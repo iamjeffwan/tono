@@ -16,8 +16,9 @@ const beforeManifest = await readFile(path.join(project, 'package.json'), 'utf8'
 const beforeComponents = await readFile(path.join(project, 'components.json'), 'utf8')
 const installed = JSON.parse(await readFile(path.join(project, 'node_modules/@design-guardrails/cli/package.json'), 'utf8'))
 assert.equal(installed.name, '@design-guardrails/cli')
-assert.deepEqual(installed.dependencies, { '@shadcn/lint': '0.2.0' })
+assert.deepEqual(installed.dependencies, { '@shadcn/lint': '0.2.0', cosmiconfig: '9.0.0', shadcn: '4.21.0' })
 await readFile(path.join(project, 'node_modules/@design-guardrails/cli/dist/theme-query-worker.js'))
+await readFile(path.join(project, 'node_modules/@design-guardrails/cli/dist/shadcn-config-worker.js'))
 const store = new SqliteScanSessionStore(database)
 const app = await createScanHttpApp({ service: new ScanService({ store }) })
 const server = await app.listen({ host: '127.0.0.1', port: 0 })
@@ -81,7 +82,8 @@ try {
   assert.equal(detectedTask.result?.schemaVersion, 2)
   assert.deepEqual(detectedTask.result?.tailwind, { status: 'installed', version: tailwind.version })
   assert.deepEqual(detectedTask.result?.theme, { status: 'located', path: components.tailwind.css, source: 'official_query' })
-  assert.equal(detectedTask.result?.shadcn.status, 'not_checked')
+  assert.equal(detectedTask.result?.shadcn.status, 'used')
+  assert.equal(detectedTask.result?.shadcn.status === 'used' ? detectedTask.result.shadcn.appearance : '', 'base-nova')
   assert.deepEqual(detectedTask.result?.support.blockingIssues, [])
   const [detectionFile] = await readdir(detectionCache)
   assert(detectionFile)
@@ -101,7 +103,7 @@ try {
   const report = {
     installedPackage: installed.name, version: installed.version, mode: 'demo+project-scan',
     createStatus: response.status, finalStatus: task.status,
-    tailwindVersion: tailwind.version, themePath: components.tailwind.css, shadcnStatus: 'not_checked',
+    tailwindVersion: tailwind.version, themePath: components.tailwind.css, shadcnAppearance: 'base-nova',
     duplicateConfirmed: true, persistedAfterReopen: true,
     tokenAbsentFromCacheAndOutput: true, projectManifestUnchanged: true,
     verifiedAt: new Date().toISOString(),
