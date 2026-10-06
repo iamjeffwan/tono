@@ -241,7 +241,9 @@ describe('installed project scan', () => {
     expect(task.result?.warnings.map((warning) => warning.code)).toContain('SHADCN_QUERY_FAILED')
     expect(task.result?.componentLibraries).toEqual([])
     expect(task.result?.support).toEqual({
-      status: 'needs_action', blockingIssues: [], warnings: ['最终接入判定将在后续工单完成。'],
+      status: 'needs_action',
+      blockingIssues: ['未能确认是否使用 shadcn，不能选择语义预设。'],
+      warnings: ['请确认 styles/brand.css 是要接入的主题文件。此路径未经过全项目引用审计。'],
     })
     expect(await readFile(path.join(ctx.directory, 'eslint.config.mjs'), 'utf8')).toContain('must never execute')
     const [file] = await readdir(ctx.options.cacheDirectory)
@@ -262,7 +264,14 @@ describe('installed project scan', () => {
     expect(missingResult.task.result?.tailwind).toEqual({ status: 'not_installed', version: null })
     expect(missingResult.task.result?.warnings.map((warning) => warning.code)).toContain('TAILWIND_NOT_INSTALLED')
     expect(missingResult.task.result?.theme).toEqual({ status: 'located', path: 'src/index.css', source: 'official_query' })
-    expect(missingResult.task.result?.support.blockingIssues).toEqual(['项目尚未安装样式框架。'])
+    expect(missingResult.task.result?.support).toEqual({
+      status: 'needs_action',
+      blockingIssues: ['项目尚未安装样式框架。'],
+      warnings: [
+        '请确认 src/index.css 是要接入的主题文件。此路径未经过全项目引用审计。',
+        '未使用 shadcn，语义角色按基础体系配置。',
+      ],
+    })
 
     const older = await context()
     await writeProject(older.directory, {
@@ -274,6 +283,7 @@ describe('installed project scan', () => {
     expect(olderResult.task.result?.tailwind).toEqual({ status: 'installed', version: '3.4.17' })
     expect(olderResult.task.result?.warnings.map((warning) => warning.code)).toContain('TAILWIND_VERSION_UNSUPPORTED')
     expect(olderResult.task.result?.theme).toMatchObject({ status: 'located', path: 'src/index.css' })
+    expect(olderResult.task.result?.support.blockingIssues).toEqual(['当前安装版本不属于受支持的第四版稳定版本。'])
     expect(olderResult.task.result?.support.status).toBe('needs_action')
     expect(olderResult.task.result?.shadcn.status).toBe('not_used')
   })
@@ -297,7 +307,11 @@ describe('installed project scan', () => {
     })
     const absentResult = await scanDirectory(absent)
     expect(absentResult.task.result?.theme).toEqual({ status: 'not_found', path: null, source: null })
-    expect(absentResult.task.result?.support.blockingIssues).toContain('未能定位可供确认的项目主题文件。')
+    expect(absentResult.task.result?.support).toEqual({
+      status: 'needs_action',
+      blockingIssues: [],
+      warnings: ['尚未定位主题文件，请确认要接入的文件。', '未使用 shadcn，语义角色按基础体系配置。'],
+    })
 
     const outside = await context()
     await writeProject(outside.directory, {
@@ -346,13 +360,15 @@ describe('installed project scan', () => {
       expect(task.status).toBe('completed')
       expect(task.result?.tailwind).toEqual({ status: 'installed', version: '4.3.3' })
       expect(task.result?.theme).toEqual({ status: 'located', path: 'src/index.css', source: 'official_query' })
-      expect(task.result?.support).toEqual({
-        status: 'needs_action', blockingIssues: [], warnings: ['最终接入判定将在后续工单完成。'],
-      })
+      expect(task.result?.support.status).toBe('partially_supported')
+      expect(task.result?.support.blockingIssues).toEqual([])
+      expect(task.result?.support.warnings[0]).toBe('请确认 src/index.css 是要接入的主题文件。此路径未经过全项目引用审计。')
       expect(task.result?.componentLibraries).toEqual([])
     }
     expect(nova.task.result?.shadcn).toEqual({ status: 'used', appearance: 'base-nova', boxes: officialBoxes })
+    expect(nova.task.result?.support.warnings[1]).toBe('外观 base-nova 将按默认盒子预填语义角色。')
     expect(vega.task.result?.shadcn).toEqual({ status: 'used', appearance: 'base-vega', boxes: officialBoxes })
+    expect(vega.task.result?.support.warnings[1]).toBe('外观 base-vega 将按默认盒子预填语义角色。')
     expect(JSON.stringify(nova.task.result?.shadcn)).not.toContain('neutral')
     expect(JSON.stringify(vega.task.result?.shadcn)).not.toContain('blue')
     expect(JSON.stringify(vega.task.result?.shadcn)).not.toContain('baseColor')
@@ -382,7 +398,14 @@ describe('installed project scan', () => {
     const failed = await scanStyle('base-nova', 'neutral', '{')
     expect(failed.task.result?.shadcn).toEqual({ status: 'query_failed' })
     expect(failed.task.result?.warnings.map((warning) => warning.code)).toContain('SHADCN_QUERY_FAILED')
-    expect(failed.task.result?.support.blockingIssues).toEqual([])
+    expect(failed.task.result?.support).toEqual({
+      status: 'needs_action',
+      blockingIssues: ['未能确认是否使用 shadcn，不能选择语义预设。'],
+      warnings: ['请确认 src/index.css 是要接入的主题文件。此路径未经过全项目引用审计。'],
+    })
+    expect(unlisted.task.result?.support.blockingIssues).toEqual([
+      '外观 brand-custom 不在官方名单内，不能按默认盒子预填，也不能当作未使用。',
+    ])
     expect(JSON.stringify(failed.task.result)).not.toContain('components.json')
   })
 
@@ -416,7 +439,11 @@ describe('installed project scan', () => {
     expect(task.result?.tailwind.status).toBe('not_checked')
     expect(task.result?.theme.status).toBe('not_checked')
     expect(task.result?.shadcn.status).toBe('not_checked')
-    expect(task.result?.support.status).toBe('unsupported')
+    expect(task.result?.support).toEqual({
+      status: 'unsupported',
+      blockingIssues: ['目前只支持单应用。检测到多包仓库，已停止后续查询。'],
+      warnings: [],
+    })
     expect(task.result?.warnings.map((warning) => warning.code)).toContain('MONOREPO_UNSUPPORTED')
   })
 
@@ -436,10 +463,16 @@ describe('installed project scan', () => {
     expect(task.result?.tailwind).toEqual({ status: 'installed', version: installed.version })
     expect(task.result?.theme).toEqual({ status: 'located', path: components.tailwind.css, source: 'official_query' })
     expect(task.result?.shadcn).toEqual({ status: 'used', appearance: 'base-nova', boxes: officialBoxes })
-    expect(task.result?.support.blockingIssues).toEqual([])
+    expect(task.result?.support).toEqual({
+      status: 'partially_supported',
+      blockingIssues: [],
+      warnings: [
+        `请确认 ${components.tailwind.css} 是要接入的主题文件。此路径未经过全项目引用审计。`,
+        '外观 base-nova 将按默认盒子预填语义角色。',
+      ],
+    })
     expect(JSON.stringify(task.result?.shadcn)).not.toContain('neutral')
     expect(JSON.stringify(task.result?.shadcn)).not.toContain('button')
-    expect(task.result?.support.status).toBe('needs_action')
     expect(JSON.stringify(task.result)).not.toContain(project)
     expect(await readFile(path.join(project, 'package.json'), 'utf8')).toBe(manifest)
     expect(await readFile(path.join(project, 'components.json'), 'utf8')).toBe(componentsText)

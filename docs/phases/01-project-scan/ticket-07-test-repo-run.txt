@@ -1,0 +1,92 @@
+工单七：独立测试仓库实测
+运行时间：2026-10-06 14:43:23（北京时间）
+目标：F:\lint-shadcn-tailwind-test
+命令：当前工作区构建出的 design-guardrails scan，对这个仓库做一次真实扫描并上传到临时本地服务。
+退出码：0
+任务状态：completed
+支持性结论：partially_supported
+项目的 package.json 与 components.json 扫描后字节不变。
+终端输出不含上传令牌，也不含该仓库的绝对路径。
+
+终端输出：
+
+项目目录已确认，开始本地检测。
+已安装样式框架版本：4.3.3
+官方查询选中的主题：src/index.css；此路径未经过全项目引用审计。
+shadcn 外观：base-nova。
+结果快照已保存：F:\lint\artifacts\ticket-07-run-FEqms9\cache\scan_873735b40c1a58086a9cc850-85fc4116-ccc9-4c0b-be1e-02d552f49be3.json
+正在上传检测结果。
+服务端已接收结果。
+
+标准输出为空。
+
+服务端保存的完整任务：
+
+{
+  "sessionId": "scan_873735b40c1a58086a9cc850",
+  "status": "completed",
+  "result": {
+    "schemaVersion": 2,
+    "cliVersion": "0.1.0",
+    "tailwind": {
+      "status": "installed",
+      "version": "4.3.3"
+    },
+    "theme": {
+      "status": "located",
+      "path": "src/index.css",
+      "source": "official_query"
+    },
+    "shadcn": {
+      "status": "used",
+      "appearance": "base-nova",
+      "boxes": [
+        "background",
+        "foreground",
+        "card",
+        "card-foreground",
+        "popover",
+        "popover-foreground",
+        "primary",
+        "primary-foreground",
+        "secondary",
+        "secondary-foreground",
+        "muted",
+        "muted-foreground",
+        "accent",
+        "accent-foreground",
+        "destructive",
+        "border",
+        "input",
+        "ring",
+        "chart-1",
+        "chart-2",
+        "chart-3",
+        "chart-4",
+        "chart-5",
+        "sidebar",
+        "sidebar-foreground",
+        "sidebar-primary",
+        "sidebar-primary-foreground",
+        "sidebar-accent",
+        "sidebar-accent-foreground",
+        "sidebar-border",
+        "sidebar-ring",
+        "radius"
+      ]
+    },
+    "componentLibraries": [],
+    "support": {
+      "status": "partially_supported",
+      "blockingIssues": [],
+      "warnings": [
+        "请确认 src/index.css 是要接入的主题文件。此路径未经过全项目引用审计。",
+        "外观 base-nova 将按默认盒子预填语义角色。"
+      ]
+    },
+    "warnings": []
+  },
+  "error": null
+}
+
+这三项在这份结果里分别是：样式框架为已安装的 4.3.3，可以按第四版生成主题；主题文件定位到 src/index.css，写入前仍要确认；外观 base-nova 带有默认盒子，语义角色按这套预填。没有阻断项。目前只支持单应用这一条没有出现，因为该仓库是单个应用。
