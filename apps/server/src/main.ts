@@ -11,7 +11,7 @@ const service = new ScanService({ store })
 const app = await createScanHttpApp({
   service, logger: true,
   ...(process.env.PUBLIC_ORIGIN ? { publicOrigin: process.env.PUBLIC_ORIGIN } : {}),
-  ...(process.env.WEB_ORIGIN ? { corsOrigin: process.env.WEB_ORIGIN } : {}),
+  ...(process.env.WEB_ORIGIN ? { corsOrigin: process.env.WEB_ORIGIN.split(',').map((origin) => origin.trim()) } : {}),
 })
 
 const close = async () => {

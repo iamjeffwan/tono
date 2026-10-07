@@ -2,14 +2,17 @@ import cors from '@fastify/cors'
 import Fastify, { type FastifyInstance, type FastifyReply } from 'fastify'
 import { ZodError } from 'zod'
 import {
+  completeRoleChangeRequestSchema,
+  createApplySessionRequestSchema,
   createScanSessionRequestSchema,
+  roleChangeRequestSchema,
   uploadScanResultRequestSchema,
 } from '@design-system-guardrails/scan-contract'
 import { ScanService, ScanServiceError } from './service.js'
 
 export type CreateScanHttpAppOptions = {
   service: ScanService
-  corsOrigin?: string | boolean
+  corsOrigin?: string | string[] | boolean
   logger?: boolean
   bodyLimitBytes?: number
   publicOrigin?: string
@@ -29,15 +32,7 @@ export async function createScanHttpApp(
     try {
       const body = createScanSessionRequestSchema.parse(request.body)
       // 公开部署需配置 PUBLIC_ORIGIN；本地直接使用实际监听端口，不信任 Host 头。
-      const port = request.raw.socket.localPort
-      const origin = options.publicOrigin ?? `http://127.0.0.1:${port ?? 3001}`
-      const url = new URL(origin)
-      const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
-      if (url.origin !== origin || url.username || url.password ||
-        (url.protocol !== 'https:' && !(local && url.protocol === 'http:'))) {
-        throw new Error('Invalid public origin')
-      }
-      return reply.code(201).send(options.service.createSession(body, origin))
+      return reply.code(201).send(options.service.createSession(body, serviceOrigin(request.raw.socket.localPort, options.publicOrigin)))
     } catch (error) {
       return sendError(reply, error)
     }
@@ -69,7 +64,59 @@ export async function createScanHttpApp(
     },
   )
 
+  app.post('/api/apply-sessions', async (request, reply) => {
+    try {
+      const body = createApplySessionRequestSchema.parse(request.body)
+      return reply.code(201).send(options.service.createApplySession(body, serviceOrigin(request.raw.socket.localPort, options.publicOrigin)))
+    } catch (error) { return sendError(reply, error) }
+  })
+
+  app.post<{ Params: { applyId: string } }>('/api/apply-sessions/:applyId/scale', async (request, reply) => {
+    try {
+      return reply.code(202).send(options.service.submitScale(request.params.applyId))
+    } catch (error) { return sendError(reply, error) }
+  })
+
+  app.post<{ Params: { applyId: string } }>('/api/apply-sessions/:applyId/changes', async (request, reply) => {
+    try {
+      roleChangeRequestSchema.parse(request.body)
+      return reply.code(202).send(options.service.submitRoleChange(request.params.applyId, request.body))
+    } catch (error) { return sendError(reply, error) }
+  })
+
+  app.get<{ Params: { applyId: string; changeId: string } }>('/api/apply-sessions/:applyId/changes/:changeId', async (request, reply) => {
+    try {
+      return reply.send(options.service.getRoleChange(request.params.applyId, request.params.changeId))
+    } catch (error) { return sendError(reply, error) }
+  })
+
+  app.post<{ Params: { applyId: string } }>('/api/apply-sessions/:applyId/claim', async (request, reply) => {
+    try {
+      return reply.send(options.service.claimRoleChange(request.params.applyId, readBearerToken(request.headers.authorization)))
+    } catch (error) { return sendError(reply, error) }
+  })
+
+  app.post<{ Params: { applyId: string; changeId: string } }>('/api/apply-sessions/:applyId/changes/:changeId/result', async (request, reply) => {
+    try {
+      completeRoleChangeRequestSchema.parse(request.body)
+      return reply.send(options.service.completeRoleChange(
+        request.params.applyId, request.params.changeId, readBearerToken(request.headers.authorization), request.body,
+      ))
+    } catch (error) { return sendError(reply, error) }
+  })
+
   return app
+}
+
+function serviceOrigin(port: number | undefined, publicOrigin: string | undefined) {
+  const origin = publicOrigin ?? `http://127.0.0.1:${port ?? 3001}`
+  const url = new URL(origin)
+  const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)
+  if (url.origin !== origin || url.username || url.password ||
+    (url.protocol !== 'https:' && !(local && url.protocol === 'http:'))) {
+    throw new Error('Invalid public origin')
+  }
+  return origin
 }
 
 function readBearerToken(header: string | undefined) {

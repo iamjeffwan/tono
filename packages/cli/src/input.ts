@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 export const sessionIdSchema = z.string().regex(/^scan_[a-zA-Z0-9_-]{1,100}$/)
+export const applyIdSchema = z.string().regex(/^apply_[a-zA-Z0-9_-]{1,100}$/)
 export const tokenSchema = z.string().regex(/^[a-zA-Z0-9_-]{16,512}$/)
 export const serverUrlSchema = z.string().max(2048).transform((value, context) => {
   try {

@@ -1,0 +1,190 @@
+工单五、工单六：磁盘上留下的实际扫描快照
+整理日期：2026-10-06
+
+这些不是测试源码里的期望值，而是测试进程当时写进结果快照的内容。
+位置：F:\lint\artifacts\cli test *\cache\scan_*.json
+该目录被 git 忽略，仓库里没有另一份整理过的跑分报告。
+
+共找到 317 个快照文件。其中 18 个超过 20KB，是故意放大的上传测试，没有当作扫描事实。
+40 个是 2026-09-28 的第一版协议演示结果，当时还没有真实检测。
+第二版协议的快照分成两批：
+
+- 2026-09-29 21:14（北京时间）：工单五。shadcn 一律是 not_checked。支持性结论里的占位句是「组件查询与最终接入判定将在后续工单完成。」
+- 2026-09-30 08:27（北京时间）：工单六接上之后的最近一批。同一批里每种结果有 5 到 10 份，内容相同，是重复运行留下的。下面记的是这一批。
+
+快照里没有令牌，也没有项目绝对路径。下面每条都是当时回传的 result 字段。cliVersion 都是 0.1.0，schemaVersion 都是 2，componentLibraries 都是空数组。
+
+默认盒子在这批快照里实际返回 32 个，顺序如下：
+background, foreground, card, card-foreground, popover, popover-foreground,
+primary, primary-foreground, secondary, secondary-foreground, muted, muted-foreground,
+accent, accent-foreground, destructive, border, input, ring,
+chart-1, chart-2, chart-3, chart-4, chart-5,
+sidebar, sidebar-foreground, sidebar-primary, sidebar-primary-foreground,
+sidebar-accent, sidebar-accent-foreground, sidebar-border, sidebar-ring, radius
+
+
+一、2026-09-30 实际回传
+----------------------
+
+1. 独立测试项目
+   快照样例：artifacts\cli test DHRUe3\cache\scan_869e48706e938f646d1845ab-630a901e-939a-4532-b8fc-539bb401ce40.json
+   相同快照 10 份。临时目录本身没有 package.json，扫描目标是仓库外的独立项目。
+   tailwind：installed，版本 4.3.3
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：used，外观 base-nova，盒子为上面 32 个
+   support：needs_action，阻断项为空，警告「最终接入判定将在后续工单完成。」
+   warnings：空
+
+2. 项目名 shadcn-scan，外观 base-vega，baseColor 为 blue
+   快照样例：artifacts\cli test PEjy3a\cache\scan_6f9a1d3a59d76427f1d04d1e-839023ec-40f9-43ac-85d4-9cb237d4ef81.json
+   相同快照 5 份。
+   tailwind：installed，版本 4.3.3
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：used，外观 base-vega，盒子与 base-nova 那 32 个相同
+   快照正文里没有 blue，也没有 baseColor
+   support：needs_action，阻断项为空，警告「最终接入判定将在后续工单完成。」
+   warnings：空
+
+3. 项目名 shadcn-scan，外观 brand-custom
+   配置原文：{"style":"brand-custom","tailwind":{"css":"src/index.css","baseColor":"neutral"},"aliases":{"components":"@/components","utils":"@/lib/utils"}}
+   快照样例：artifacts\cli test 9tfBOh\cache\scan_fb5e8b8ecfda156f17ebe2a7-3af5db7f-8f31-420c-9dbb-ccdf5667fc5d.json
+   相同快照 5 份。
+   tailwind：installed，版本 4.3.3
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：used，外观 brand-custom，boxes 为 null
+   warnings：
+   - SHADCN_STYLE_UNLISTED，warning，「外观不在官方名单内，未附上默认盒子。」
+   support：needs_action，阻断项为空，警告「最终接入判定将在后续工单完成。」
+
+4. 项目名 no-shadcn，没有 components.json
+   快照样例：artifacts\cli test EvqiEN\cache\scan_d20b671f80c38b1ab834923e-12e3c52f-14de-4aee-92c8-f76fb0de7155.json
+   相同快照 8 份。其中包含「项目内没有配置」和「只有用户目录里的全局配置」两种夹具，回传相同。
+   tailwind：installed，版本 4.3.3
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：not_used
+   warnings：空
+   support：needs_action，阻断项为空，警告「最终接入判定将在后续工单完成。」
+
+5. 项目名 shadcn-scan，components.json 只有 {"style":"base-nova"}
+   快照样例：artifacts\cli test nORf45\cache\scan_ce2c863cdf0fc9f093fd04d6-1eddfb55-aa4d-4d8a-a212-04ae8f961328.json
+   相同快照 5 份。
+   tailwind：installed，版本 4.3.3
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：query_failed
+   warnings：
+   - SHADCN_QUERY_FAILED，error，「官方 shadcn 配置查询失败或未能通过官方校验，不能据此判断没有使用。」
+   support：needs_action，阻断项为空
+
+6. 项目名 shadcn-scan，components.json 内容是单个字符 {
+   快照样例：artifacts\cli test WxCySp\cache\scan_e7df0be11bcdba5193a31c77-febf6832-cc95-41cb-b780-ce1a7984c7a5.json
+   相同快照 5 份。
+   tailwind：installed，版本 4.3.3
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：query_failed
+   warnings：
+   - THEME_QUERY_WARNING，warning，「官方主题查询产生警告，可能使用了自动发现路径，请确认选中主题。」
+   - SHADCN_QUERY_FAILED，error，「官方 shadcn 配置查询失败或未能通过官方校验，不能据此判断没有使用。」
+   support：needs_action，阻断项为空
+
+7. 项目名 scanned，components.json 为 {"tailwind":{"css":"styles/brand.css"}}
+   快照样例：artifacts\cli test a1l1YB\cache\scan_cc58c57a5dbd708f8990b4c7-6b63d484-4902-4155-ba02-d5a21a760031.json
+   相同快照 5 份。
+   tailwind：installed，版本 4.3.3
+   theme：located，路径 styles/brand.css，来源 official_query
+   shadcn：query_failed
+   warnings：
+   - SHADCN_QUERY_FAILED，error，「官方 shadcn 配置查询失败或未能通过官方校验，不能据此判断没有使用。」
+   support：needs_action，阻断项为空
+
+8. 项目名 missing-tailwind，依赖写了 tailwindcss，目录里没有安装
+   快照样例：artifacts\cli test ArQKss\cache\scan_5516db5b389572a41932963e-8cac4618-c0fa-4650-bea9-6ffd67e6f1ff.json
+   相同快照 5 份。
+   tailwind：not_installed，version 为 null
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：not_used
+   warnings：
+   - TAILWIND_NOT_INSTALLED，error，「项目尚未安装样式框架。」
+   support.blockingIssues：
+   - 项目尚未安装样式框架。
+
+9. 项目名 tailwind-three，安装版本 3.4.17
+   快照样例：artifacts\cli test u4zVYn\cache\scan_b338b87c67540a4f920c2d3a-0ef83cbc-5dff-46a2-9b84-43f0dda1043b.json
+   相同快照 5 份。
+   tailwind：installed，版本 3.4.17
+   theme：located，路径 src/index.css，来源 official_query
+   shadcn：not_used
+   warnings：
+   - TAILWIND_VERSION_UNSUPPORTED，error，「当前安装版本不属于受支持的第四版稳定版本。」
+   support.blockingIssues：
+   - 当前安装版本不属于受支持的第四版稳定版本。
+
+10. 项目名 corrupt，安装清单里的 version 是 ^4
+    快照样例：artifacts\cli test M7vd8g\cache\scan_17dfee8914b6031353f1e0d5-e87b8aac-6566-4ed5-978c-8f530bc9cc98.json
+    相同快照 5 份。
+    tailwind：unknown，version 为 null
+    theme：located，路径 src/index.css，来源 official_query
+    shadcn：not_used
+    warnings：
+    - TAILWIND_UNKNOWN，error，「无法确认项目实际安装的样式框架版本。」
+    support.blockingIssues：
+    - 无法确认项目实际安装的样式框架版本。
+
+11. 项目名 no-theme，安装了 4.3.3，没有样式入口
+    快照样例：artifacts\cli test OqjvCO\cache\scan_4b8a799f4e2020e0b94ae528-b5f64ee4-2333-4307-9287-9457ff77c028.json
+    相同快照 5 份。
+    tailwind：installed，版本 4.3.3
+    theme：not_found，path 为 null，source 为 null
+    shadcn：not_used
+    warnings：空
+    support.blockingIssues：
+    - 未能定位可供确认的项目主题文件。
+
+12. 项目名 outer，从子目录扫描，配置指向项目外的样式文件
+    快照样例：artifacts\cli test gnfK1F\cache\scan_0c50dc89ec25b91314ac5609-3995d747-5945-4b89-8a41-39b46179ff0c.json
+    相同快照 5 份。
+    tailwind：not_installed，version 为 null
+    theme：query_failed，path 为 null，source 为 null
+    shadcn：query_failed
+    warnings：
+    - TAILWIND_NOT_INSTALLED，error，「项目尚未安装样式框架。」
+    - THEME_OUTSIDE_PROJECT，error，「查询到的主题不在当前项目范围内，未采纳该路径。」
+    - SHADCN_QUERY_FAILED，error，「官方 shadcn 配置查询失败或未能通过官方校验，不能据此判断没有使用。」
+    support.blockingIssues：
+    - 项目尚未安装样式框架。
+    - 未能定位可供确认的项目主题文件。
+
+13. 项目名 workspace，package.json 声明了 workspaces
+    快照样例：artifacts\cli test aQ54ap\cache\scan_be61a9fa31e36dc9e66401c9-e65d8a1a-d191-49bb-a03e-6797ebf0fde8.json
+    相同快照 5 份。
+    tailwind：not_checked
+    theme：not_checked
+    shadcn：not_checked
+    warnings：
+    - MONOREPO_UNSUPPORTED，error，「检测到多包仓库，当前阶段暂不支持，已停止后续查询。」
+    support：unsupported
+    support.blockingIssues：
+    - 检测到多包仓库，当前阶段暂不支持，已停止后续查询。
+
+14. 找不到项目包清单
+    快照样例：artifacts\cli test nssHSA\cache\scan_18afe5211e0523f00107e607-2b297eb4-351e-42e6-94c0-06111b76da38.json
+    相同快照 5 份。
+    tailwind：not_checked
+    theme：not_checked
+    shadcn：not_checked
+    warnings：
+    - PROJECT_NOT_FOUND，error，「未找到项目包清单，请指定项目目录。」
+    support.blockingIssues：
+    - 未找到项目包清单，请指定项目目录。
+
+
+二、更早一批里和工单六不同的地方
+--------------------------------
+
+2026-09-29 21:14 那批，样式框架和主题的结论与上面相同，但 shadcn 全部是 not_checked。
+当时正常项目的占位句是「组件查询与最终接入判定将在后续工单完成。」
+例如项目 scanned：tailwind 4.3.3，主题 styles/brand.css，shadcn 为 not_checked，warnings 为空。
+样例：artifacts\cli test mK8Z00\cache\scan_aeed3972f120650629fc75dd-615c48a6-2896-415a-8e06-0cd4ebb7b147.json
+
+另外有 155 份通信演示快照，不是这两单的检测结果。
+shadcn 为 not_checked，阻断项是「仅通信演示，尚未检测真实项目。」
+警告代码 DEMO_ONLY，「此结果为测试数据，不能判断项目是否受支持。」

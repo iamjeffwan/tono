@@ -76,8 +76,83 @@ export const getScanSessionResponseSchema = z.strictObject({
   sessionId: z.string().min(1), status: scanSessionStatusSchema,
   result: scanResultSchema.nullable(), error: scanSessionErrorSchema.nullable(),
 })
+export const colorRoleNames = officialShadcnBoxNames.filter((name) => name !== 'radius')
+const stepName = z.string().regex(/^(?:[a-z]+(?:-[a-z]+)*-\d{2,3}|black|white|white-10|white-15)$/)
+export const roleChangeRequestSchema = z.strictObject({
+  role: z.enum(colorRoleNames),
+  mode: z.enum(['light', 'dark']),
+  step: stepName,
+})
+export const scaleVariableSchema = z.strictObject({
+  name: z.string().regex(/^[a-z]+(?:-[a-z0-9]+)*(?:--[a-z]+(?:-[a-z0-9]+)*)?$/),
+  value: z.string().min(1).max(240),
+})
+export const applyRejectionCodeSchema = z.enum([
+  'THEME_UNCONFIRMED', 'BOX_MISSING', 'STEP_UNKNOWN', 'TARGET_AMBIGUOUS', 'WRITE_FAILED',
+])
+export const roleChangeStatusSchema = z.enum(['waiting', 'written', 'rejected'])
+export const createApplySessionRequestSchema = z.strictObject({
+  scanSessionId: z.string().min(1),
+  themePath: relativePath,
+})
+export const createApplySessionResponseSchema = z.strictObject({
+  applyId: z.string().min(1),
+  token: z.string().min(1),
+  themePath: relativePath,
+  command: z.string().min(1),
+})
+export const submitRoleChangeResponseSchema = z.strictObject({
+  changeId: z.string().min(1),
+  status: roleChangeStatusSchema,
+  reason: applyRejectionCodeSchema.nullable(),
+})
+const changeStatusFields = {
+  changeId: z.string().min(1),
+  status: roleChangeStatusSchema,
+  reason: applyRejectionCodeSchema.nullable(),
+}
+export const roleChangeViewSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('role'),
+    ...changeStatusFields,
+    role: roleChangeRequestSchema.shape.role,
+    mode: roleChangeRequestSchema.shape.mode,
+    step: roleChangeRequestSchema.shape.step,
+  }),
+  z.strictObject({ kind: z.literal('scale'), ...changeStatusFields }),
+])
+export const claimRoleChangeResponseSchema = z.strictObject({
+  change: z.discriminatedUnion('kind', [
+    z.strictObject({
+      kind: z.literal('role'),
+      changeId: z.string().min(1),
+      claimToken: z.string().min(1),
+      role: roleChangeRequestSchema.shape.role,
+      mode: roleChangeRequestSchema.shape.mode,
+      step: roleChangeRequestSchema.shape.step,
+    }),
+    z.strictObject({
+      kind: z.literal('scale'),
+      changeId: z.string().min(1),
+      claimToken: z.string().min(1),
+      variables: z.array(scaleVariableSchema).min(1),
+    }),
+  ]).nullable(),
+})
+export const completeRoleChangeRequestSchema = z.strictObject({
+  claimToken: z.string().min(1),
+  status: z.enum(['written', 'rejected']),
+  reason: applyRejectionCodeSchema.nullable(),
+}).refine((value) => (value.status === 'rejected') === (value.reason !== null), {
+  message: 'A rejected change needs exactly one reason.',
+})
+
 export type ScanSessionStatus = z.infer<typeof scanSessionStatusSchema>
 export type ScanResult = z.infer<typeof scanResultSchema>
+export type RoleChangeRequest = z.infer<typeof roleChangeRequestSchema>
+export type ScaleVariable = z.infer<typeof scaleVariableSchema>
+export type ApplyRejectionCode = z.infer<typeof applyRejectionCodeSchema>
+export type CreateApplySessionResponse = z.infer<typeof createApplySessionResponseSchema>
 export type CreateScanSessionRequest = z.infer<typeof createScanSessionRequestSchema>
 export type CreateScanSessionResponse = z.infer<typeof createScanSessionResponseSchema>
 export type UploadScanResultRequest = z.infer<typeof uploadScanResultRequestSchema>

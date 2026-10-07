@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>语义盒子</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1915;
+    --muted: #6d655c;
+    --line: #e4dcd0;
+    --paper: #f3ecdf;
+    --card: #fffdf8;
+    --mark: #9a3412;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 420px at 100% -10%, #f7e7c8 0%, transparent 60%),
+      var(--paper);
+    font-family: "IBM Plex Sans", sans-serif;
+    min-height: 100vh;
+  }
+  header, main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+  header { padding: 28px 0 8px; }
+  h1 { font-family: Fraunces, serif; font-size: 46px; line-height: 0.95; font-weight: 560; margin: 0; letter-spacing: -0.03em; }
+  .lede, .back { color: var(--muted); }
+  .lede { max-width: 640px; margin: 8px 0 0; }
+  .back { display: inline-block; margin-top: 12px; }
+  main { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; padding: 18px 0 48px; align-items: start; }
+  .board, aside { background: var(--card); border: 1px solid var(--line); border-radius: 18px; }
+  .board { padding: 8px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { font-size: 13px; color: var(--muted); font-weight: 500; }
+  td b, .meta { font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+  .meta { color: var(--muted); font-size: 12px; }
+  .role { width: 100%; display: flex; align-items: center; gap: 8px; font: inherit; color: inherit; background: transparent; border: 0; cursor: pointer; text-align: left; border-radius: 10px; padding: 4px; }
+  tr[aria-current="true"] { background: #f7e7c8; }
+  .swatch { width: 28px; height: 28px; border-radius: 8px; border: 1px solid rgb(28 25 21 / 12%); flex: none; }
+  aside { padding: 16px; position: sticky; top: 12px; display: flex; flex-direction: column; gap: 12px; }
+  aside h2 { font-family: Fraunces, serif; font-size: 28px; margin: 0; font-weight: 560; }
+  .modes, .ramps { display: flex; flex-wrap: wrap; gap: 6px; }
+  .modes button, .ramps button, .steps button, .ghost {
+    font: inherit; color: inherit; background: transparent; border: 1px solid var(--line); cursor: pointer;
+  }
+  .modes button, .ghost { border-radius: 999px; padding: 8px 12px; }
+  label { display: flex; flex-direction: column; gap: 4px; }
+  input { font: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+  .modes button[aria-current="true"] { background: var(--ink); color: var(--card); }
+  .ramps button { width: 28px; height: 28px; border-radius: 50%; border-width: 2px; }
+  .ramps button[aria-current="true"], .steps button[aria-current="true"] { border-color: var(--ink); }
+  .steps { display: flex; flex-direction: column; gap: 6px; max-height: 420px; overflow: auto; }
+  .steps button { display: flex; align-items: center; gap: 8px; border-radius: 10px; padding: 6px 8px; }
+  .preview { border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .preview p { margin: 0; }
+  .preview button { border: 0; border-radius: 10px; padding: 8px 14px; font: inherit; font-weight: 500; cursor: default; }
+  @media (max-width: 960px) {
+    main { grid-template-columns: 1fr; }
+    aside { position: static; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>语义盒子</h1>
+  <p class="lede">打开时按现有颜色对齐。点一个盒子，再点右边的一档，浅色或深色就改指向那一档。选择留在这台浏览器里。</p>
+  <a class="back" href="./index.html">返回基础阶梯</a>
+</header>
+<main>
+  <section class="board">
+    <table>
+      <thead>
+        <tr><th>盒子</th><th>浅色</th><th>深色</th></tr>
+      </thead>
+      <tbody id="roles"></tbody>
+    </table>
+  </section>
+  <aside>
+    <h2 id="role-name"></h2>
+    <div class="modes" id="modes"></div>
+    <div class="ramps" id="ramps"></div>
+    <div class="steps" id="steps"></div>
+    <div class="preview" id="preview"></div>
+    <label class="meta">服务地址 <input id="server" value="http://127.0.0.1:3001" /></label>
+    <label class="meta">通道编号 <input id="apply-id" /></label>
+    <label class="meta">令牌 <input id="apply-token" /></label>
+    <button class="ghost" id="write" type="button">写回当前指向</button>
+    <p class="meta" id="write-status"></p>
+    <button class="ghost" id="reset" type="button">恢复初始对齐</button>
+  </aside>
+</main>
+<script src="./base.js"></script>
+<script src="./roles.js"></script>
+<script>
+const base = globalThis.TAILWIND_V4_BASE
+const bindings = globalThis.ROLE_BINDINGS
+const storageKey = 'design-system-role-bindings-v1'
+const color = base.properties.find((item) => item.id === 'color')
+const palette = [
+  ...color.ramps.flatMap((ramp) => ramp.steps.map((step) => ({ name: `${ramp.name}-${step.name}`, value: step.value, ramp: ramp.name }))),
+  ...color.singles.map((step) => ({ name: step.name, value: step.value, ramp: step.name })),
+]
+const state = {
+  role: 'primary',
+  mode: 'light',
+  ramp: 'neutral',
+  bindings: load(),
+}
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(storageKey))
+    if (!saved) return structuredClone(bindings.roles)
+    return bindings.roles.map((role) => saved.find((item) => item.name === role.name) ?? role)
+  } catch {
+    return structuredClone(bindings.roles)
+  }
+}
+function save() { localStorage.setItem(storageKey, JSON.stringify(state.bindings)) }
+function roleOf(name) { return state.bindings.find((role) => role.name === name) }
+function stepOf(name) { return palette.find((step) => step.name === name) }
+function ramps() {
+  return [...color.ramps.map((ramp) => ramp.name), ...color.singles.map((step) => step.name)]
+}
+
+function render() {
+  const current = roleOf(state.role)
+  document.querySelector('#roles').replaceChildren(...state.bindings.map((role) => {
+    const row = document.createElement('tr')
+    row.setAttribute('aria-current', String(role.name === state.role))
+    const name = document.createElement('td')
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.className = 'role'
+    button.textContent = role.name
+    button.addEventListener('click', () => {
+      state.role = role.name
+      state.ramp = stepOf(role[state.mode])?.ramp ?? state.ramp
+      render()
+    })
+    name.append(button)
+    row.append(name, cell(role.light), cell(role.dark))
+    return row
+  }))
+  document.querySelector('#role-name').textContent = current.name
+  document.querySelector('#modes').replaceChildren(...bindings.modes.map((mode) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = mode === 'light' ? '浅色' : '深色'
+    button.setAttribute('aria-current', String(mode === state.mode))
+    button.addEventListener('click', () => {
+      state.mode = mode
+      state.ramp = stepOf(current[mode])?.ramp ?? state.ramp
+      render()
+    })
+    return button
+  }))
+  document.querySelector('#ramps').replaceChildren(...ramps().map((name) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.title = name
+    const sample = palette.find((step) => step.ramp === name && (step.name.endsWith('-500') || step.name === name))
+    button.style.background = sample?.value ?? '#ddd'
+    button.setAttribute('aria-current', String(name === state.ramp))
+    button.addEventListener('click', () => { state.ramp = name; render() })
+    return button
+  }))
+  document.querySelector('#steps').replaceChildren(...palette.filter((step) => step.ramp === state.ramp).map((step) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.setAttribute('aria-current', String(step.name === current[state.mode]))
+    const swatch = document.createElement('span')
+    swatch.className = 'swatch'
+    swatch.style.background = step.value
+    const label = document.createElement('span')
+    label.textContent = step.name
+    button.append(swatch, label)
+    button.addEventListener('click', () => {
+      current[state.mode] = step.name
+      save()
+      render()
+    })
+    return button
+  }))
+  paintPreview(current)
+}
+
+function cell(stepName) {
+  const cell = document.createElement('td')
+  const step = stepOf(stepName)
+  const swatch = document.createElement('span')
+  swatch.className = 'swatch'
+  swatch.style.background = step?.value ?? 'transparent'
+  const text = document.createElement('span')
+  text.className = 'meta'
+  text.textContent = stepName
+  const wrap = document.createElement('div')
+  wrap.style.display = 'flex'
+  wrap.style.alignItems = 'center'
+  wrap.style.gap = '8px'
+  wrap.append(swatch, text)
+  cell.append(wrap)
+  return cell
+}
+
+function paintPreview(role) {
+  const preview = document.querySelector('#preview')
+  const light = stepOf(role.light)
+  const dark = stepOf(role.dark)
+  const primary = roleOf('primary')
+  const primaryText = roleOf('primary-foreground')
+  const button = document.createElement('button')
+  button.type = 'button'
+  button.textContent = '主要按钮'
+  button.style.background = stepOf(primary[state.mode])?.value ?? 'transparent'
+  button.style.color = stepOf(primaryText[state.mode])?.value ?? '#111'
+  const note = document.createElement('p')
+  note.className = 'meta'
+  note.textContent = `${state.mode === 'light' ? '浅色' : '深色'} ${role.name} → ${role[state.mode]}`
+  const samples = document.createElement('p')
+  samples.append(chip(light?.value), document.createTextNode(' 浅色  '), chip(dark?.value), document.createTextNode(' 深色'))
+  preview.replaceChildren(note, samples, button)
+}
+function chip(color) {
+  const node = document.createElement('span')
+  node.className = 'swatch'
+  node.style.display = 'inline-block'
+  node.style.background = color ?? 'transparent'
+  node.style.verticalAlign = 'middle'
+  return node
+}
+
+const connectionKey = 'design-system-apply-connection'
+const connection = JSON.parse(localStorage.getItem(connectionKey) ?? '{}')
+for (const [id, key] of [['server', 'server'], ['apply-id', 'applyId'], ['apply-token', 'token']]) {
+  const input = document.querySelector(`#${id}`)
+  if (connection[key]) input.value = connection[key]
+  input.addEventListener('change', () => localStorage.setItem(connectionKey, JSON.stringify({
+    server: document.querySelector('#server').value,
+    applyId: document.querySelector('#apply-id').value,
+    token: document.querySelector('#apply-token').value,
+  })))
+}
+document.querySelector('#write').addEventListener('click', async () => {
+  const status = document.querySelector('#write-status')
+  const role = roleOf(state.role)
+  const server = document.querySelector('#server').value.replace(/\/$/, '')
+  const applyId = document.querySelector('#apply-id').value
+  status.textContent = '正在提交'
+  const response = await fetch(`${server}/api/apply-sessions/${encodeURIComponent(applyId)}/changes`, {
+    method: 'POST', headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ role: role.name, mode: state.mode, step: role[state.mode] }),
+  })
+  const body = await response.json()
+  if (!response.ok || body.status === 'rejected') { status.textContent = `未改动 ${body.reason ?? response.status}`; return }
+  const watch = async () => {
+    const current = await fetch(`${server}/api/apply-sessions/${encodeURIComponent(applyId)}/changes/${encodeURIComponent(body.changeId)}`)
+    const view = await current.json()
+    status.textContent = view.status === 'waiting' ? '等待命令行' : view.status === 'written' ? '已写入' : `未改动 ${view.reason}`
+    if (view.status === 'waiting') setTimeout(watch, 2000)
+  }
+  watch()
+})
+document.querySelector('#reset').addEventListener('click', () => {
+  state.bindings = structuredClone(bindings.roles)
+  save()
+  render()
+})
+
+render()
+</script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>基础阶梯</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,640&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #1c1915;
+    --muted: #6d655c;
+    --line: #e4dcd0;
+    --paper: #f3ecdf;
+    --card: #fffdf8;
+    --mark: #9a3412;
+    --mark-soft: #f3e0d4;
+    --good: #245c45;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    color: var(--ink);
+    background:
+      radial-gradient(900px 420px at 100% -10%, #f7e7c8 0%, transparent 60%),
+      var(--paper);
+    font-family: "IBM Plex Sans", sans-serif;
+    min-height: 100vh;
+  }
+  header, main { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+  header { padding: 28px 0 8px; display: flex; justify-content: space-between; gap: 24px; align-items: end; }
+  h1 { font-family: Fraunces, serif; font-size: 46px; line-height: 0.95; font-weight: 560; margin: 0; letter-spacing: -0.03em; }
+  .lede { max-width: 460px; color: var(--muted); margin: 8px 0 0; }
+  .source { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--muted); text-align: right; }
+  main { display: grid; grid-template-columns: 148px 1fr 300px; gap: 18px; padding: 18px 0 48px; align-items: start; }
+  nav, .stage, aside { background: var(--card); border: 1px solid var(--line); border-radius: 18px; }
+  nav { padding: 8px; display: flex; flex-direction: column; gap: 4px; position: sticky; top: 12px; }
+  nav button, .ramp-strip button, .ghost, .add button {
+    font: inherit; color: inherit; background: transparent; border: 0; cursor: pointer;
+  }
+  nav button { text-align: left; padding: 10px 12px; border-radius: 12px; }
+  nav button[aria-current="true"] { background: var(--ink); color: var(--card); }
+  .stage { padding: 18px; min-height: 640px; }
+  .stage h2 { font-family: Fraunces, serif; font-size: 32px; margin: 0 0 4px; font-weight: 560; }
+  .hint { color: var(--muted); margin: 0 0 16px; }
+  .ramp-strip { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 16px; }
+  .ramp-strip button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; }
+  .ramp-strip button[aria-current="true"] { border-color: var(--ink); }
+  .scale { display: flex; flex-direction: column; gap: 8px; }
+  .step { display: grid; grid-template-columns: 92px minmax(0, 1fr) minmax(140px, auto); gap: 12px; align-items: center; padding: 8px; border-radius: 12px; }
+  .step-side { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+  .step.extended { background: var(--mark-soft); outline: 1px dashed var(--mark); }
+  .step b { font-family: "IBM Plex Mono", monospace; font-weight: 500; }
+  .step span, .meta { color: var(--muted); font-family: "IBM Plex Mono", monospace; font-size: 12px; overflow-wrap: anywhere; }
+  .swatch { height: 36px; border-radius: 8px; border: 1px solid rgb(28 25 21 / 12%); }
+  .bar { height: 14px; background: var(--ink); border-radius: 99px; }
+  .type-sample { line-height: 1; }
+  .radius-sample, .shadow-sample { width: 72px; height: 36px; background: white; border: 1px solid var(--line); }
+  .tag { font-size: 11px; letter-spacing: 0.04em; color: var(--mark); }
+  .remove { color: var(--mark); padding: 4px 6px; }
+  aside { padding: 16px; position: sticky; top: 12px; }
+  aside h3 { margin: 0 0 8px; font-size: 15px; }
+  form { display: flex; flex-direction: column; gap: 8px; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+  input, select, textarea { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  textarea { min-height: 72px; resize: vertical; }
+  .add { margin-top: 4px; background: var(--ink); color: var(--card); border-radius: 999px; padding: 10px 14px; }
+  .error { color: var(--mark); min-height: 1.2em; margin: 0; font-size: 13px; }
+  .log { list-style: none; padding: 0; margin: 14px 0; display: flex; flex-direction: column; gap: 8px; }
+  .log li { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  .row { display: flex; gap: 8px; }
+  .ghost { border: 1px solid var(--line); border-radius: 999px; padding: 8px 12px; background: var(--card); }
+  @media (max-width: 960px) {
+    main { grid-template-columns: 1fr; }
+    nav { position: static; flex-direction: row; overflow: auto; }
+    aside { position: static; }
+    header { flex-direction: column; align-items: start; }
+    .source { text-align: left; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>基础阶梯</h1>
+    <p class="lede">颜色沿用 Tailwind 第四版的色相，并补上 white-10、white-15 两档透明白。间距、字号、字重、圆角和阴影是固定像素档。加一档时，新档留在同一条阶梯末尾。</p>
+    <p class="lede"><a href="./roles.html">语义盒子的指向</a></p>
+  </div>
+  <p class="source" id="source"></p>
+</header>
+<main>
+  <nav id="properties" aria-label="属性"></nav>
+  <section class="stage">
+    <h2 id="property-title"></h2>
+    <p class="hint" id="property-hint"></p>
+    <div class="ramp-strip" id="ramps"></div>
+    <div class="scale" id="scale"></div>
+  </section>
+  <aside>
+    <h3>在这一属性上扩展</h3>
+    <form id="extend">
+      <label id="ramp-field">色相
+        <select id="ramp"></select>
+      </label>
+      <label id="new-ramp-field">新色相的名字
+        <input id="new-ramp" autocomplete="off" />
+      </label>
+      <label>档位名字
+        <input id="step-name" required autocomplete="off" />
+      </label>
+      <label>值
+        <textarea id="step-value" required></textarea>
+      </label>
+      <label id="line-field">行高
+        <input id="line-height" autocomplete="off" />
+      </label>
+      <p class="error" id="error" role="status"></p>
+      <button class="add" type="submit">加到阶梯上</button>
+    </form>
+    <h3>已扩展</h3>
+    <ul class="log" id="log"></ul>
+    <div class="row">
+      <button class="ghost" id="copy" type="button">复制扩展数据</button>
+      <button class="ghost" id="clear" type="button">清空扩展</button>
+    </div>
+    <h3>写入主题</h3>
+    <form id="apply">
+      <label>服务地址
+        <input id="server" value="http://127.0.0.1:3001" />
+      </label>
+      <label>通道编号
+        <input id="apply-id" autocomplete="off" />
+      </label>
+      <button class="add" id="write" type="button">写入主题</button>
+      <p class="error" id="write-status" role="status"></p>
+    </form>
+  </aside>
+</main>
+<script src="./base.js"></script>
+<script>
+const base = globalThis.TAILWIND_V4_BASE
+const storageKey = 'design-system-extensions-v2'
+const hints = {
+  color: '每一种色相是一条阶梯。white、black 在色相之外。white-10、white-15 是补上的透明白，用来对齐深色边框和输入框。',
+  spacing: '数字名沿用 Tailwind 的间距档，值是固定像素。128、160、192 是多出来的三档，分别是 512px、640px、768px。',
+  fontSize: '名字留到 7xl。值是像素。行高是相对这一档字号的倍数，例如 16px 乘 1.5 等于 24px。',
+  fontWeight: '基础档只留 400、500、600、700，用来建立层级。',
+  radius: '规范档用像素做名字。组件里的 rounded-md 等类名以后指到这些档上。',
+  shadow: '五档，每档两层。最轻和最重先定，中间按跨度排开。',
+}
+const state = {
+  property: 'color',
+  ramp: base.properties[0].ramps[0].name,
+  extensions: load(),
+}
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(storageKey)) ?? [] }
+  catch { return [] }
+}
+function save() { localStorage.setItem(storageKey, JSON.stringify(state.extensions)) }
+function property() { return base.properties.find((item) => item.id === state.property) }
+function extensionsFor(id, ramp) {
+  return state.extensions.filter((item) => item.property === id && (ramp == null || item.ramp === ramp))
+}
+
+function render() {
+  document.querySelector('#source').textContent = `颜色来自 tailwindcss ${base.source.version} · 其余是固定档`
+  const current = property()
+  document.querySelector('#properties').replaceChildren(...base.properties.map((item) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.textContent = item.label
+    button.setAttribute('aria-current', String(item.id === current.id))
+    button.addEventListener('click', () => { state.property = item.id; render() })
+    return button
+  }))
+  document.querySelector('#property-title').textContent = current.label
+  document.querySelector('#property-hint').textContent = hints[current.id]
+  renderRamps(current)
+  renderScale(current)
+  renderForm(current)
+  renderLog()
+}
+
+function renderRamps(current) {
+  const strip = document.querySelector('#ramps')
+  strip.replaceChildren()
+  if (current.kind !== 'ramps') return
+  const names = [...current.ramps.map((ramp) => ramp.name), ...new Set(state.extensions.filter((item) => item.property === 'color' && item.ramp && !current.ramps.some((ramp) => ramp.name === item.ramp)).map((item) => item.ramp))]
+  if (!names.includes(state.ramp)) state.ramp = names[0]
+  strip.replaceChildren(...names.map((name) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.title = name
+    button.setAttribute('aria-current', String(name === state.ramp))
+    const sample = current.ramps.find((ramp) => ramp.name === name)?.steps.find((step) => step.name === '500')
+      ?? extensionsFor('color', name)[0]
+    button.style.background = sample?.value ?? '#ddd'
+    button.addEventListener('click', () => { state.ramp = name; render() })
+    return button
+  }), ...current.singles.map((step) => {
+    const button = document.createElement('button')
+    button.type = 'button'
+    button.title = step.name
+    button.style.background = step.value
+    button.setAttribute('aria-current', String(state.ramp === step.name))
+    button.addEventListener('click', () => { state.ramp = step.name; render() })
+    return button
+  }))
+}
+
+function renderScale(current) {
+  const scale = document.querySelector('#scale')
+  const builtin = current.kind === 'ramps'
+    ? (current.ramps.find((ramp) => ramp.name === state.ramp)?.steps ?? current.singles.filter((step) => step.name === state.ramp))
+    : current.steps
+  const added = current.kind === 'ramps' ? extensionsFor('color', state.ramp) : extensionsFor(current.id)
+  const rows = [
+    ...builtin.map((step) => row(current, step, false)),
+    ...added.map((step) => row(current, step, true)),
+  ]
+  if (current.base) {
+    const note = document.createElement('p')
+    note.className = 'meta'
+    note.textContent = `底数 --${current.base.name}: ${current.base.value}`
+    scale.replaceChildren(note, ...rows)
+  } else scale.replaceChildren(...rows)
+}
+
+function row(current, step, extended) {
+  const item = document.createElement('div')
+  item.className = extended ? 'step extended' : 'step'
+  const name = document.createElement('b')
+  name.textContent = step.name
+  const visual = document.createElement('div')
+  paint(current.id, visual, step)
+  const side = document.createElement('div')
+  side.className = 'step-side'
+  const meta = document.createElement('span')
+  meta.textContent = step.lineHeight ? `${step.value} · 行高 ${step.lineHeight}` : step.value
+  side.append(meta)
+  if (extended) {
+    const mark = document.createElement('span')
+    mark.className = 'tag'
+    mark.textContent = '扩展'
+    const remove = document.createElement('button')
+    remove.type = 'button'
+    remove.className = 'remove'
+    remove.textContent = '去掉'
+    remove.addEventListener('click', () => {
+      state.extensions = state.extensions.filter((entry) => entry.id !== step.id)
+      save(); render()
+    })
+    side.append(mark, remove)
+  }
+  item.append(name, visual, side)
+  return item
+}
+
+function paint(id, node, step) {
+  if (id === 'color') {
+    node.className = 'swatch'
+    node.style.background = step.value
+  } else if (id === 'spacing') {
+    node.className = 'bar'
+    const width = Number.parseFloat(step.value)
+    node.style.width = `${Math.max(4, (width / 768) * 420)}px`
+  } else if (id === 'fontSize') {
+    node.className = 'type-sample'
+    node.textContent = '阶梯'
+    node.style.fontSize = step.value
+    if (step.lineHeight) node.style.lineHeight = step.lineHeight
+  } else if (id === 'fontWeight') {
+    node.className = 'type-sample'
+    node.textContent = '字重'
+    node.style.fontWeight = step.value
+    node.style.fontSize = '28px'
+  } else if (id === 'radius') {
+    node.className = 'radius-sample'
+    node.style.borderRadius = step.value
+  } else {
+    node.className = 'shadow-sample'
+    node.style.boxShadow = step.value
+  }
+}
+
+function renderForm(current) {
+  const rampField = document.querySelector('#ramp-field')
+  const newRampField = document.querySelector('#new-ramp-field')
+  const lineField = document.querySelector('#line-field')
+  rampField.hidden = current.id !== 'color' || current.singles.some((step) => step.name === state.ramp)
+  newRampField.hidden = true
+  lineField.hidden = current.id !== 'fontSize'
+  if (current.id === 'color' && !rampField.hidden) {
+    const select = document.querySelector('#ramp')
+    const names = current.ramps.map((ramp) => ramp.name)
+    select.replaceChildren(...names.map((name) => {
+      const option = document.createElement('option')
+      option.value = name
+      option.textContent = name
+      option.selected = name === state.ramp
+      return option
+    }), new Option('新色相', '__new__'))
+    select.onchange = () => { newRampField.hidden = select.value !== '__new__' }
+    newRampField.hidden = select.value !== '__new__'
+  }
+}
+
+function renderLog() {
+  const log = document.querySelector('#log')
+  if (!state.extensions.length) {
+    const empty = document.createElement('li')
+    empty.textContent = '还没有扩展。'
+    log.replaceChildren(empty)
+    return
+  }
+  log.replaceChildren(...state.extensions.map((item) => {
+    const li = document.createElement('li')
+    const text = document.createElement('span')
+    text.textContent = `${labelOf(item.property)} ${item.ramp ? item.ramp + ' ' : ''}${item.name}`
+    li.append(text)
+    return li
+  }))
+}
+function labelOf(id) { return base.properties.find((item) => item.id === id).label }
+
+document.querySelector('#extend').addEventListener('submit', (event) => {
+  event.preventDefault()
+  const current = property()
+  const name = document.querySelector('#step-name').value.trim()
+  const value = document.querySelector('#step-value').value.trim()
+  const error = document.querySelector('#error')
+  let ramp = current.id === 'color' ? state.ramp : undefined
+  if (current.id === 'color' && !current.singles.some((step) => step.name === state.ramp)) {
+    const selected = document.querySelector('#ramp').value
+    ramp = selected === '__new__' ? document.querySelector('#new-ramp').value.trim() : selected
+  }
+  const builtin = current.kind === 'ramps'
+    ? (current.ramps.find((item) => item.name === ramp)?.steps ?? [])
+    : current.steps
+  const exists = builtin.some((step) => step.name === name) || state.extensions.some((step) => step.property === current.id && step.ramp === ramp && step.name === name)
+  if (!name || !value || (current.id === 'color' && !ramp)) { error.textContent = '名字、值和色相都要填写。'; return }
+  if (exists) { error.textContent = '这个档位已经在阶梯上。'; return }
+  const lineHeight = document.querySelector('#line-height').value.trim()
+  state.extensions.push({ id: crypto.randomUUID(), property: current.id, ramp, name, value, lineHeight: lineHeight || undefined })
+  if (current.id === 'color') state.ramp = ramp
+  save()
+  event.currentTarget.reset()
+  error.textContent = ''
+  render()
+})
+
+document.querySelector('#copy').addEventListener('click', async () => {
+  const text = JSON.stringify(state.extensions, null, 2)
+  try {
+    await navigator.clipboard.writeText(text)
+    document.querySelector('#error').textContent = '扩展数据已复制。'
+  } catch {
+    document.querySelector('#error').textContent = '复制失败，扩展仍保存在这台浏览器里。'
+  }
+})
+document.querySelector('#clear').addEventListener('click', () => {
+  state.extensions = []
+  save()
+  render()
+})
+
+const connectionKey = 'design-system-apply-connection'
+const connection = JSON.parse(localStorage.getItem(connectionKey) ?? '{}')
+for (const [id, key] of [['server', 'server'], ['apply-id', 'applyId']]) {
+  const input = document.querySelector(`#${id}`)
+  if (connection[key]) input.value = connection[key]
+  input.addEventListener('change', () => {
+    const saved = JSON.parse(localStorage.getItem(connectionKey) ?? '{}')
+    saved[key] = input.value
+    localStorage.setItem(connectionKey, JSON.stringify(saved))
+  })
+}
+document.querySelector('#write').addEventListener('click', async () => {
+  const status = document.querySelector('#write-status')
+  const server = document.querySelector('#server').value.replace(/\/$/, '')
+  const applyId = document.querySelector('#apply-id').value.trim()
+  status.textContent = '正在提交'
+  const response = await fetch(`${server}/api/apply-sessions/${encodeURIComponent(applyId)}/scale`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}',
+  })
+  const body = await response.json()
+  if (!response.ok || body.status === 'rejected') { status.textContent = `未改动 ${body.reason ?? body.error?.code ?? response.status}`; return }
+  const watch = async () => {
+    const current = await fetch(`${server}/api/apply-sessions/${encodeURIComponent(applyId)}/changes/${encodeURIComponent(body.changeId)}`)
+    const view = await current.json()
+    status.textContent = view.status === 'waiting' ? '等待命令行' : view.status === 'written' ? '已写入' : `未改动 ${view.reason}`
+    if (view.status === 'waiting') setTimeout(watch, 2000)
+  }
+  watch()
+})
+
+render()
+</script>
+</body>
+</html>

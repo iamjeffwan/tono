@@ -1,0 +1,135 @@
+工单五、工单六：检查项与独立测试仓库实测
+运行时间：2026-10-06 14:18:05（北京时间）
+目标：F:\lint-shadcn-tailwind-test
+命令：当前工作区构建出的 design-guardrails scan，对这个仓库做一次真实扫描并上传到临时本地服务。
+退出码：0
+任务状态：completed
+项目的 package.json 与 components.json 扫描后字节不变。
+终端输出和结果快照都不含上传令牌，也不含该仓库的绝对路径。
+
+
+一、要查的东西，以及为什么查
+----------------------------
+
+这一轮只查接入准备需要的事实。不运行代码检查，不改项目，也不判断能不能进入设计体系配置。最后那句「最终接入判定将在后续工单完成。」是工单七的占位。
+
+工单五
+
+1. 是不是单个应用
+   从指定目录向上找项目，并识别多包仓库。
+   作用：版本和主题必须属于同一个应用。多包仓库在这一阶段直接停下，避免把仓库根或错误的子包当成扫描对象。
+   这个测试仓库是单个应用，所以这项没有阻断。
+
+2. 实际安装的样式框架版本
+   读目标项目 node_modules 里的 tailwindcss 版本。package.json 里的版本范围不算已经安装，工具自己的依赖也不算用户项目的依赖。
+   作用：后面的主题和检查只准备给 Tailwind CSS 第四版稳定版用。没安装、版本无法确认、或不是第四版，都要单独说出来。
+
+3. 主题文件路径
+   用固定版本 @shadcn/lint@0.2.0 的 project.themeFileFor 查询。不执行插件规则，也不启动项目里的代码检查器。
+   作用：之后设计体系要确认或写入的就是这个文件。返回的是官方查询选中的相对路径。选中不等于全项目每个页面都引用了它，所以结果里写明来源是 official_query，并提示尚未做全项目引用审计。
+
+工单六
+
+4. 是否使用 shadcn
+   只在项目根目录查找 components.json，并用 shadcn@4.21.0 的官方 schema 校验。不运行 shadcn info，也不读取用户全局配置。
+   作用：后面要决定是否加载 shadcn 的语义预设。没有配置文件是「未使用」。文件在但校验失败，或官方查询失败，是「查询失败」，不能当成没使用。
+
+5. 外观名
+   读取通过校验的 style。
+   作用：记录项目选定的外观。官方外观共用同一份默认盒子，基础色不改变这份名单，所以不读取 baseColor。
+
+6. 默认盒子
+   外观在官方名单内时，附上主题文档 Theme Tokens 表里的那 32 个名字。浅色和深色不拆成两份。
+   作用：这些名字是该外观安装时带上的语义角色，后面做语义映射时要知道覆盖哪些角色。名单以外的外观仍记为已使用，但不附这份额认盒子。已安装了哪些组件不在本次查询范围内。
+
+
+二、终端输出
+------------
+
+项目目录已确认，开始本地检测。
+已安装样式框架版本：4.3.3
+官方查询选中的主题：src/index.css；此路径未经过全项目引用审计。
+shadcn 外观：base-nova。
+结果快照已保存：F:\lint\artifacts\ticket-05-06-run-jVnpB1\cache\scan_dce21dcbb92e49af5a4def7f-1b8e060e-787d-4561-a0b5-d1d6f40a9e24.json
+正在上传检测结果。
+服务端已接收结果。
+
+标准输出为空。
+
+
+三、服务端保存的完整任务
+------------------------
+
+{
+  "sessionId": "scan_dce21dcbb92e49af5a4def7f",
+  "status": "completed",
+  "result": {
+    "schemaVersion": 2,
+    "cliVersion": "0.1.0",
+    "tailwind": {
+      "status": "installed",
+      "version": "4.3.3"
+    },
+    "theme": {
+      "status": "located",
+      "path": "src/index.css",
+      "source": "official_query"
+    },
+    "shadcn": {
+      "status": "used",
+      "appearance": "base-nova",
+      "boxes": [
+        "background",
+        "foreground",
+        "card",
+        "card-foreground",
+        "popover",
+        "popover-foreground",
+        "primary",
+        "primary-foreground",
+        "secondary",
+        "secondary-foreground",
+        "muted",
+        "muted-foreground",
+        "accent",
+        "accent-foreground",
+        "destructive",
+        "border",
+        "input",
+        "ring",
+        "chart-1",
+        "chart-2",
+        "chart-3",
+        "chart-4",
+        "chart-5",
+        "sidebar",
+        "sidebar-foreground",
+        "sidebar-primary",
+        "sidebar-primary-foreground",
+        "sidebar-accent",
+        "sidebar-accent-foreground",
+        "sidebar-border",
+        "sidebar-ring",
+        "radius"
+      ]
+    },
+    "componentLibraries": [],
+    "support": {
+      "status": "needs_action",
+      "blockingIssues": [],
+      "warnings": [
+        "最终接入判定将在后续工单完成。"
+      ]
+    },
+    "warnings": []
+  },
+  "error": null
+}
+
+本地快照与上面的 result 一致。快照另外记录 cacheVersion 为 1，服务地址为当时的临时本机端口 http://127.0.0.1:4084。创建任务的接口返回 201。
+
+
+四、这轮没有覆盖的情况
+----------------------
+
+目标只有这一个正常的测试仓库。未安装、第三版、版本无法确认、没有主题、主题越界、没有 components.json、配置无效、名单外外观、多包仓库，都没有在这一轮里重跑。

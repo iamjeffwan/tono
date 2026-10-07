@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { scanResultSchema, getScanSessionResponseSchema, createScanSessionResponseSchema } from './index.js'
+import { scanResultSchema, getScanSessionResponseSchema, createScanSessionResponseSchema, roleChangeRequestSchema, roleChangeViewSchema, claimRoleChangeResponseSchema, completeRoleChangeRequestSchema } from './index.js'
 
 const officialBoxes = [
   'background', 'foreground', 'card', 'card-foreground', 'popover', 'popover-foreground',
@@ -62,5 +62,23 @@ describe('scan contract', () => {
   })
   it('requires an offset-aware expiration time', () => {
     expect(createScanSessionResponseSchema.safeParse({ sessionId: 'scan_123', token: 'token', expiresAt: '2026-09-24T12:00:00', command: 'example' }).success).toBe(false)
+  })
+  it('accepts a color role change and rejects radius or an unnamed step', () => {
+    expect(roleChangeRequestSchema.parse({ role: 'primary', mode: 'light', step: 'blue-600' })).toEqual({ role: 'primary', mode: 'light', step: 'blue-600' })
+    expect(roleChangeRequestSchema.safeParse({ role: 'radius', mode: 'light', step: 'blue-600' }).success).toBe(false)
+    expect(roleChangeRequestSchema.safeParse({ role: 'primary', mode: 'light', step: 'not a step' }).success).toBe(false)
+    expect(completeRoleChangeRequestSchema.safeParse({ claimToken: 'claim', status: 'written', reason: null }).success).toBe(true)
+    expect(completeRoleChangeRequestSchema.safeParse({ claimToken: 'claim', status: 'written', reason: 'BOX_MISSING' }).success).toBe(false)
+    expect(completeRoleChangeRequestSchema.safeParse({ claimToken: 'claim', status: 'rejected', reason: null }).success).toBe(false)
+  })
+  it('accepts a scale write without a color role and rejects a role view missing its step', () => {
+    expect(roleChangeViewSchema.parse({ kind: 'scale', changeId: 'change_1', status: 'waiting', reason: null })).toMatchObject({ kind: 'scale' })
+    expect(claimRoleChangeResponseSchema.parse({
+      change: { kind: 'scale', changeId: 'change_1', claimToken: 'claim', variables: [{ name: 'spacing-4', value: '16px' }] },
+    }).change).toMatchObject({ kind: 'scale' })
+    expect(roleChangeViewSchema.safeParse({ kind: 'role', changeId: 'change_1', status: 'waiting', reason: null }).success).toBe(false)
+    expect(claimRoleChangeResponseSchema.safeParse({
+      change: { kind: 'scale', changeId: 'change_1', claimToken: 'claim', variables: [] },
+    }).success).toBe(false)
   })
 })

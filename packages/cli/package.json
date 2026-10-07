@@ -21,6 +21,7 @@
     "prepack": "npm run build"
   },
   "devDependencies": {
+    "@design-system-guardrails/design-system": "0.1.0",
     "@design-system-guardrails/scan-contract": "0.1.0",
     "commander": "^14.0.0",
     "minimatch": "^10.2.6",
