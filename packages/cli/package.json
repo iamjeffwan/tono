@@ -1,5 +1,5 @@
 {
-  "name": "@design-guardrails/cli",
+  "name": "@tono/cli",
   "version": "0.1.0",
   "private": true,
   "description": "Local project scan runner and result transport",
@@ -8,7 +8,7 @@
     "node": ">=22"
   },
   "bin": {
-    "design-guardrails": "dist/main.js"
+    "tono": "dist/main.js"
   },
   "files": [
     "dist/main.js",
@@ -21,16 +21,16 @@
     "prepack": "npm run build"
   },
   "devDependencies": {
-    "@design-system-guardrails/design-system": "0.1.0",
-    "@design-system-guardrails/scan-contract": "0.1.0",
-    "commander": "^14.0.0",
     "minimatch": "^10.2.6",
     "semver": "^7.8.5",
     "yaml": "^2.9.1"
   },
   "dependencies": {
+    "@tono/server": "0.1.0",
     "@shadcn/lint": "0.2.0",
+    "cac": "^7.1.0",
     "cosmiconfig": "9.0.0",
+    "open": "^11.0.4",
     "shadcn": "4.21.0"
   }
 }

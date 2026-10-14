@@ -8,7 +8,7 @@
 
 基础阶梯继续以 `demos/design-system/base.js` 为来源。命令行和服务不读这个浏览器脚本。把颜色档抽成一份 JSON，放到 `packages/design-system/palette.json`：每一项是档名和颜色值，例如 `blue-600` 对 `oklch(54.6% 0.245 262.881)`，包含 `white-10`、`white-15`。演示页改成读同一份数据，避免两处各写一遍。
 
-32 个盒子名继续用 `@design-system-guardrails/scan-contract` 里的 `officialShadcnBoxNames`。写回接受其中除 `radius` 以外的名字。
+32 个盒子名继续用 `@design-system/scan-contract` 里的 `officialShadcnBoxNames`。写回接受其中除 `radius` 以外的名字。
 
 ## 协议
 

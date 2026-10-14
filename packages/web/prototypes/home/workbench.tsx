@@ -1,0 +1,5 @@
+﻿import { ApplyContent, ProjectForm, ResultContent, ScanContent, Status, TrustContent } from './shared'
+import type { Demo } from './shared'
+export function Workbench({ demo }: { demo: Demo }) {
+  return <div className="workbench"><div className="page-intro"><span className="eyebrow">项目空间 / 主页</span><h1>{demo.project?.name ?? '你的项目，你的设计体系。'}</h1><p>在本地接入，在这里查看环境和整理设计。</p></div><div className="workbench-grid"><div className="workbench-actions"><section className="work-panel"><div className="section-top"><h2>{demo.project ? '连接本地项目' : '创建项目空间'}</h2><Status demo={demo} /></div>{demo.project ? <ScanContent demo={demo} /> : <><ProjectForm demo={demo} /><div className="section-divider" /><TrustContent /></>}</section><section className="work-panel"><div className="section-top"><h2>下一步：设计体系</h2></div><ApplyContent demo={demo} /></section></div><section className="environment-panel"><div className="section-top"><h2>项目环境</h2><span className="small-label">本地检测回传</span></div><ResultContent demo={demo} /></section></div></div>
+}

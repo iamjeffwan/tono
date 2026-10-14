@@ -1,5 +1,5 @@
 {
-  "name": "design-system-guardrails",
+  "name": "tono",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,26 +7,28 @@
     "packages/*"
   ],
   "scripts": {
-    "build:cli": "npm run build --workspace @design-guardrails/cli",
-    "pack:cli": "node scripts/pack-cli.mjs",
-    "verify:cli-package": "tsx scripts/verify-cli-package.ts",
-    "dev:server": "tsx apps/server/src/main.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "build:cli": "npm run build --workspace @tono/cli",
+    "dev:server": "tsx packages/server/src/index.ts",
+    "dev:web": "npm run dev --workspace @tono/web",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^24.13.3",
     "@types/semver": "^7.8.0",
     "esbuild": "^0.28.2",
+    "prettier": "3.9.9",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@fastify/cors": "^11.3.0",
-    "better-sqlite3": "^13.0.3",
-    "fastify": "^5.12.5",
+    "@hono/node-server": "^2.1.4",
+    "hono": "^4.13.13",
+    "postcss": "^8.5.30",
+    "postcss-value-parser": "^4.2.0",
     "zod": "^4.1.12"
   }
 }
