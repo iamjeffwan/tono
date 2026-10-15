@@ -36,9 +36,9 @@ tono/
   └── package.json       # Monorepo 根配置 (workspaces: ["packages/*"])
 ```
 
-### 技术栈选型（严禁引入无意义的沉重依赖）：
-- **CLI**：`cac`（Evan You 出品的极轻量命令行框架） + `open`（自动唤起浏览器） + `node:net` 原生端口自增探测器（对齐 Vite 源码实现）。
-- **Server**：`hono` + `@hono/node-server`（轻量、冷启动极快、零原生编译依赖） + `postcss`（精准 AST 级 CSS 自定义属性提取与写回） + `@shadcn/lint`（主题路径嗅探）。
+### 技术栈选型：
+- **CLI**：`cac` + `open` + `node:net` 原生端口自增探测器（对齐 Vite 源码实现）。
+- **Server**：`hono` + `@hono/node-server` + `postcss` + `@shadcn/lint`。
 - **Web SPA**：`React 19` + `Vite 8` + `Tailwind CSS v4` + `shadcn/ui` + `lucide-react`。
 - **测试框架**：`Vitest 3`。
 
@@ -48,41 +48,27 @@ tono/
 
 Phase 1 已经全部编写并通过单测，代码状态处于 **100% 绿灯（Green / Pass）**：
 
-1. **原生端口探测器** (`packages/cli/src/port.ts`)：
-   - 采用 Vite 原生实现，基于 Node.js `node:net` 监听与 `EADDRINUSE` 错误递归 `+1` 探测，无外部第三方依赖。
-   - 对应测试：`packages/cli/src/port.test.ts`。
-2. **UnoCSS 风格临时安全令牌** (`packages/server/src/security.ts`)：
-   - 每次服务启动自动通过 `node:crypto` 生成 6 位大写十六进制安全令牌（`generateSecurityToken`）。
-   - 提供 Hono 中间件（`createSecurityMiddleware`），静态网页直接放行，所有 `/api/*` 请求强制校验 `x-token` 请求头或 `?token=` 参数，阻断本地跨域恶意攻击。
-3. **本地开发服务** (`packages/server/src/index.ts`)：
-   - 导出 `startServer({ port = 3001, token = generateSecurityToken(), projectRoot = process.cwd() }: ServerOptions = {})`。
-   - 遵循规范的 ES6 解构默认值，当 `server.listen` 成功触发回调后才安全 resolve。
-4. **Tailwind v4 主题文件嗅探器** (`packages/server/src/theme-locator.ts`)：
-   - 两阶段探测：第一阶段调用 `@shadcn/lint` 的 `project.themeFileFor(root)` 并进行防路径遍历边界安全校验；第二阶段候选路径（`src/index.css`, `src/globals.css` 等）遍历并验证 `@import "tailwindcss"` 特征标记。
-5. **PostCSS AST 主题变量解析器** (`packages/server/src/css-parser.ts`)：
-   - 能够解析 CSS 源码，精准提取 `:root`（浅色模式）与 `.dark`（暗色模式）的所有以 `--` 开头的 CSS 变量键值对。
-   - 对应测试：`packages/server/src/server.test.ts`。
-6. **CLI 主入口** (`packages/cli/src/main.ts`)：
-   - 串联 CAC、端口探测、Token 生成、Server 启动、携带 `?token=${token}` 并自动调用 `open(url)` 唤起用户默认浏览器。
+1. **原生端口探测器** (`packages/cli/src/port.ts`)：测试通过。
+2. **UnoCSS 风格临时安全令牌** (`packages/server/src/security.ts`)：测试通过。
+3. **本地开发服务** (`packages/server/src/index.ts`)：服务启动与端口监听已打通。
+4. **Tailwind v4 主题文件嗅探器** (`packages/server/src/theme-locator.ts`)：两阶段安全探测。
+5. **PostCSS AST 主题变量解析器** (`packages/server/src/css-parser.ts`)：提取 `:root` 与 `.dark` 变量，测试通过。
+6. **CLI 主入口** (`packages/cli/src/main.ts`)：串联端口、令牌、Server 启动与浏览器自动打开。
 
 ---
 
-## 4. 核心教学与协作守则（对 AI 助手的强制性约束）
+## 4. ⚠️ 结对编程与教学守则（AI 助手必读，严防教条化）
 
-> **⚠️ 绝对红线（Non-Negotiable Constraints）**：
-> 1. **用户是初学者，90% 的代码必须由用户亲手键入**。**严禁 AI 替用户直接生成/覆写业务代码文件**（除非用户明确发出“帮我写”或“写”的指令）。
-> 2. **一次只推进一个微步骤（One Step at a Time）**：绝不允许一次性抛出一大堆文件修改或长篇代码片段。
-> 3. **双语专业术语标注**：所有出现的专业词汇、API、组件、属性名，必须使用“英文（中文通俗解释）”格式。例如：`State`（状态）、`Props`（组件属性）、`AST`（抽象语法树）、`Hook`（钩子函数）。
-> 4. **命令行逐行拆解**：给出的任何 PowerShell / Bash 命令，必须逐行拆解解释每一个参数的实际作用，杜绝“黑盒运行”。
-> 5. **代码组织遵循“报纸法则（Newspaper Metaphor）”**：指导用户编写代码时，结构必须是：
->    - 顶部：类型定义（Types/Interfaces）与常量配置；
->    - 中部：对外导出的核心主函数（Main Export）；
->    - 底部：被调用的私有辅助细节函数（Helper/Utility Functions）。
-> 6. **拒绝玩具模式，必须对标顶级开源**：
->    - 凡是遇到架构和模式选择，主动参考 Vite、UnoCSS 的官方实现（参见 `docs/engineering-practices.md`）。
->    - 绝不使用脆弱的 `||` 假值 fallback，强制使用 ES6 解构参数默认值。
->    - 绝不在 Monorepo 内部使用深度相对路径（`../../../`），强制通过 npm workspace 包名解析（如 `@tono/server`）。
-> 7. **全链路透明与时序图前置**：在进入任何前后端联动之前，必须先把完整的数据流向、状态保存在哪、URL 携带什么、时序逻辑清晰透明地交代给用户。
+> ### 核心认知纠偏：
+> 用户是一名初学者。不要把“严禁代写代码”理解为“只给思路让用户自己凭空写代码”。
+> **严禁当甩手掌柜！初学者无法凭空写出生产级代码。**
+> 
+> 正确的合作方式是 **“教练出图纸，学员来施工”**：
+> 1. **提供完整代码图纸**：AI 必须在聊天回复中，直接给出编写完整、组织优雅（报纸法则）、注释清晰的**代码范本（Code Snippet）**，并明确指明写在哪个文件的哪个位置。
+> 2. **“不代写”的真正所指**：AI **不要通过后台自动化工具直接静默修改或创建用户的本地文件**。必须把代码打在对话框里，由用户在 VS Code 里亲自新建、复制或敲入，由用户在终端运行命令。
+> 3. **保姆级原理解释**：代码给出后，必须逐段解释其原理，出现的专业名词必须标注英文原名及中文释义（例如：`Middleware`（中间件））。
+> 4. **逐行命令拆解**：给出的任何终端命令，必须逐行拆解参数。
+> 5. **单步闭环**：一步给一个目标与验收命令（如 `npm test`），用户反馈成功后再进入下一步。
 
 ---
 
@@ -95,12 +81,12 @@ Phase 1 已经全部编写并通过单测，代码状态处于 **100% 绿灯（G
    - `POST /api/theme`：接收前端修改后的 CSS 变量字典，使用 PostCSS 遍历修改 AST 并精准格式化写回原 CSS 文件。
 2. **Step 2.2：Web 端安全凭据接收与擦除** (`packages/web`)
    - 页面加载时从 `window.location.search` 提取 `token`，存储在客户端内存状态中。
-   - 立即通过 `window.history.replaceState({}, '', window.location.pathname)` 擦除 URL 上的 Token，避免分享泄露和视觉杂乱。
-   - 配置前端 Axios / Fetch / TanStack Query 拦截器，自动将 Token 挂载到 `x-token` Header。
+   - 立即通过 `window.history.replaceState({}, '', window.location.pathname)` 擦除 URL 上的 Token。
+   - 配置前端网络请求，自动将 Token 挂载到 `x-token` Header。
 3. **Step 2.3：设计体系实时预览（0 延迟热生效）**
-   - 借鉴 Chrome DevTools 原理：当用户在调色盘调节颜色或滑块调节圆角时，前端直接通过 `document.documentElement.style.setProperty('--primary', hex)` 注入当前 DOM，实现极致丝滑的 0 毫秒实时预览。
+   - 当用户在调色盘调节颜色或滑块调节圆角时，前端直接通过 `document.documentElement.style.setProperty` 注入当前 DOM，实现极致丝滑的 0 毫秒实时预览。
 4. **Step 2.4：集成 `@shadcn/lint` 规则校验面板**
-   - 展示项目的 `@shadcn/lint` 运行结果，提示任意值（Arbitrary values）和未注册原始色（Raw colors）的使用情况，辅助用户一键规范化。
+   - 展示项目的 `@shadcn/lint` 运行结果，提示任意值（Arbitrary values）和未注册原始色（Raw colors）的使用情况。
 
 ---
 
